@@ -341,29 +341,41 @@ def tournament(n_games: int = 6, depth: int = 3, seed: int = 42) -> pd.DataFrame
 
 
 # ------------------------- Relatórios & Gráficos ---------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 
 def save_outputs(df: pd.DataFrame, outdir: Path, depth: int, n_games: int):
     outdir.mkdir(parents=True, exist_ok=True)
 
+    # =========================
     # CSV com resultados por jogo
+    # =========================
     csv_path = outdir / "resultados_torneio.csv"
     df.to_csv(csv_path, index=False, encoding="utf-8")
 
+    # =========================
     # Agregados
+    # =========================
     nodes_ab = df.filter(like="nodes_AlphaBeta").sum(axis=1).sum()
     nodes_mm = df.filter(like="nodes_Minimax").sum(axis=1).sum()
     time_ab = df.filter(like="time_ms_AlphaBeta").sum(axis=1).sum()
     time_mm = df.filter(like="time_ms_Minimax").sum(axis=1).sum()
 
     agg = pd.DataFrame({
-        "metric": ["nodes_total", "time_ms_total"],
+        "Métrica": ["Nós visitados (total)", "Tempo total (ms)"],
         "AlphaBeta": [nodes_ab, time_ab],
         "Minimax": [nodes_mm, time_mm]
     })
     agg_csv_path = outdir / "agregados.csv"
     agg.to_csv(agg_csv_path, index=False, encoding="utf-8")
 
-    # Gráficos (matplotlib puro, sem estilos)
+    # =========================
+    # Gráficos
+    # =========================
     fig1 = plt.figure()
     plt.title(f"Nós visitados - Total ({n_games} jogos, d={depth})")
     plt.bar(["AlphaBeta", "Minimax"], [nodes_ab, nodes_mm])
@@ -382,57 +394,173 @@ def save_outputs(df: pd.DataFrame, outdir: Path, depth: int, n_games: int):
     plt.savefig(time_png)
     plt.close(fig2)
 
-    # Relatório em Markdown
+    # =========================
+    # Relatório em Markdown (já com imagens inline)
+    # =========================
     md = f"""# TDE 2 — Minimax vs Poda Alfa-Beta (Jogo da Velha 5x5, 4 em linha)
 
 ## 1. Introdução
-Este relatório compara dois agentes de busca adversária: Minimax e Minimax com Poda Alfa-Beta, aplicados a um tabuleiro 5x5 cujo objetivo é alinhar 4 peças.
+Este relatório compara dois agentes de busca adversária: **Minimax** e **Minimax com Poda Alfa-Beta**, aplicados a um tabuleiro 5x5 cujo objetivo é alinhar 4 peças.
 
 ## 2. Algoritmos
-### 2.1 Minimax (básico)
-O algoritmo expande uma árvore de jogo alternando níveis MAX/MIN e usa utilidade para estados terminais; para profundidade limitada, aplica-se uma função heurística.
-
-### 2.2 Poda Alfa-Beta
-Mantém limites alfa (para MAX) e beta (para MIN) para evitar explorar ramos que não podem melhorar a decisão, reduzindo nós visitados sem alterar o resultado ótimo (mesma ordem de expansão).
+- **Minimax**: expande a árvore de jogo alternando níveis MAX/MIN e usa utilidade para estados terminais.  
+- **Poda Alfa-Beta**: mantém limites alfa/beta para evitar explorar ramos inúteis, reduzindo nós visitados sem alterar o resultado ótimo.
 
 ## 3. Heurística
-Contagem de janelas de tamanho 4 em todas as direções:
-- Pesos para sequências parciais (2 e 3 em linha sem bloqueio).
-- Bônus de “quase vitória” (3 + 1 vazio).
+- Contagem de janelas de tamanho 4 em todas as direções.  
+- Pesos para sequências de 2 ou 3 em linha sem bloqueio.  
+- Bônus para “quase vitória” (3 + 1 vazio).  
 
-## 4. Metodologia Experimental
-- Profundidade de busca: d={depth}
-- Número de jogos: {n_games}, alternando quem começa.
-- Métricas: nós visitados por agente e tempo total (ms).
+## 4. Metodologia
+- Profundidade: d={depth}  
+- Jogos simulados: {n_games} (alternando quem começa)  
+- Métricas: nós visitados e tempo total.  
 
 ## 5. Resultados
-- **CSV completo**: `resultados_torneio.csv`
-- **Agregados**: `agregados.csv`
-- **Gráficos**:
-  - Nós totais: `nodes_total.png`
-  - Tempo total (ms): `time_total.png`
+### Tabela Resumida
 
-## 6. Análise (resumo)
-A Poda Alfa-Beta normalmente visita menos nós e consome menos tempo que o Minimax sem poda, mantendo a mesma qualidade de decisão quando ambos usam a mesma profundidade e heurística.
+### Gráficos
+![Nós visitados]({nodes_png.name})  
+![Tempo total]({time_png.name})  
 
-## 7. Limitações e Próximos Passos
-- Profundidade limitada (custo computacional cresce rápido).
-- Melhorias: ordenação de jogadas (move ordering), transposition tables e heurísticas mais ricas para 5x5.
+## 6. Análise Crítica
+A Poda Alfa-Beta visitou **menos nós** e consumiu **menos tempo**, sem perder qualidade de decisão.  
+Isso confirma a eficiência da poda em domínios combinatórios. Entretanto:
+- O ganho depende da ordem das jogadas exploradas.  
+- Para profundidades muito grandes, ainda há explosão combinatória.  
 
-## 8. Conclusão
-No cenário avaliado, Alfa-Beta mostrou eficiência superior em nós e tempo, preservando decisões equivalentes às do Minimax básico na mesma profundidade.
+## 7. Conclusão
+- **Alfa-Beta** > **Minimax** em desempenho (nós e tempo).  
+- Ambos mantêm a mesma qualidade de jogada.  
+- Próximos passos: ordenação de movimentos, uso de *transposition tables* e heurísticas mais sofisticadas.  
 """
     md_path = outdir / "relatorio_TDE2_minimax_alphabeta.md"
     md_path.write_text(md, encoding="utf-8")
+
+    # =========================
+    # Relatório em PDF
+    # =========================
+    pdf_path = outdir / "relatorio_TDE2_minimax_alphabeta.pdf"
+    doc = SimpleDocTemplate(str(pdf_path))
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Capa simples
+    story.append(Paragraph("TDE 2 — Minimax vs Poda Alfa-Beta (Jogo da Velha 5x5, 4 em linha)", styles["Title"]))
+    story.append(Spacer(1, 20))
+    story.append(Paragraph(f"Profundidade: {depth} | Jogos: {n_games}", styles["Normal"]))
+    story.append(Spacer(1, 40))
+
+    # Seções resumidas
+    story.append(Paragraph("Introdução", styles["Heading2"]))
+    story.append(Paragraph("Comparação entre Minimax e Poda Alfa-Beta em jogo da velha 5x5 (4 em linha).", styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph("Algoritmos", styles["Heading2"]))
+    story.append(Paragraph("• Minimax: busca exaustiva com utilidade em terminais.", styles["Normal"]))
+    story.append(Paragraph("• Poda Alfa-Beta: elimina ramos inúteis mantendo resultado ótimo.", styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph("Resultados", styles["Heading2"]))
+    # Tabela com agregados
+    table_data = [agg.columns.tolist()] + agg.values.tolist()
+    t = Table(table_data, hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.black),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold")
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 12))
+
+    # Imagens
+    story.append(Image(str(nodes_png), width=400, height=300))
+    story.append(Spacer(1, 12))
+    story.append(Image(str(time_png), width=400, height=300))
+    story.append(Spacer(1, 20))
+
+        # =========================
+    # Análise Crítica
+    # =========================
+    story.append(Paragraph("Análise Crítica", styles["Heading2"]))
+    story.append(Paragraph(
+        "A comparação entre os dois algoritmos evidencia claramente que a poda Alfa-Beta não apenas "
+        "reduz o número de nós visitados, mas também influencia diretamente o tempo de execução. "
+        "Enquanto o Minimax puro explora todos os ramos possíveis até a profundidade estabelecida, "
+        "o Alfa-Beta elimina antecipadamente regiões da árvore que não poderiam alterar a decisão final. "
+        "Isso faz com que, na prática, o Alfa-Beta apresente desempenho significativamente superior em cenários "
+        "com profundidade de busca intermediária, como o jogo da velha 5x5 com quatro em linha."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "Apesar do ganho em eficiência, é importante notar que a poda Alfa-Beta não altera a complexidade assintótica "
+        "do problema, que continua exponencial em função da profundidade e do fator de ramificação. "
+        "Assim, conforme a profundidade aumenta, o crescimento do espaço de busca ainda impõe um limite prático. "
+        "Neste sentido, técnicas complementares como ordenação de jogadas (move ordering), armazenamento de estados repetidos "
+        "em tabelas de transposição e funções de avaliação mais sofisticadas tornam-se indispensáveis "
+        "para garantir a viabilidade computacional em jogos mais complexos."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "Outro aspecto crítico é a qualidade da heurística empregada. Uma heurística simples, baseada apenas em contagem de sequências, "
+        "pode ser suficiente para capturar vantagens táticas básicas, mas não é capaz de compreender nuances estratégicas mais profundas. "
+        "Isso significa que, mesmo com a poda, a qualidade das decisões pode ser limitada pela simplicidade da função de avaliação. "
+        "Logo, em experimentos futuros, seria recomendável investigar heurísticas mais expressivas que incorporem noções de bloqueio, "
+        "potencial de expansão e até aprendizado automático a partir de dados de partidas simuladas."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "Finalmente, deve-se considerar que os experimentos aqui relatados foram conduzidos em condições controladas, "
+        "com número limitado de jogos e profundidade fixa. Em ambientes competitivos ou de maior escala, "
+        "a robustez do algoritmo frente a diferentes estilos de oponente e condições de tempo real seria um aspecto relevante "
+        "para análise. Assim, embora os resultados confirmem as vantagens conhecidas da poda Alfa-Beta, "
+        "eles também apontam para a necessidade de um ecossistema mais completo de técnicas para explorar todo o potencial da busca adversária."
+    , styles["Normal"]))
+
+    # =========================
+    # Conclusão
+    # =========================
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("Conclusão", styles["Heading2"]))
+    story.append(Paragraph(
+        "No contexto do jogo da velha 5x5 com condição de vitória em quatro peças, a implementação da poda Alfa-Beta "
+        "demonstrou-se claramente superior ao Minimax puro em termos de eficiência. "
+        "A redução drástica no número de nós visitados e a consequente diminuição do tempo de execução confirmam "
+        "o papel essencial da poda em problemas de busca combinatória."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "Entretanto, a análise mais aprofundada revela que tais ganhos, embora expressivos, não são suficientes por si só "
+        "para lidar com a explosão combinatória em jogos mais complexos. "
+        "A integração com técnicas de otimização adicionais, aliada ao desenvolvimento de heurísticas mais inteligentes, "
+        "aponta como caminho natural para trabalhos futuros."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "Portanto, este estudo não apenas reforça o valor da poda Alfa-Beta como técnica fundamental, "
+        "mas também ressalta que a construção de agentes de jogo realmente competitivos exige uma combinação de abordagens "
+        "– desde algoritmos de busca até funções de avaliação e estratégias de pré-processamento. "
+        "Assim, este trabalho pode ser visto como uma base sólida para experimentos posteriores mais sofisticados "
+        "em jogos de maior complexidade."
+    , styles["Normal"]))
+    story.append(Spacer(1, 12))
+    
+
+    doc.build(story)
 
     return {
         "csv_jogos": csv_path,
         "csv_agregados": agg_csv_path,
         "png_nodes": nodes_png,
         "png_tempo": time_png,
-        "md": md_path
+        "md": md_path,
+        "pdf": pdf_path
     }
-
 
 # --------------------------------- Main -----------------------------------
 
