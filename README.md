@@ -14,7 +14,7 @@ O projeto gera automaticamente:
 
 ```
 .
-├── tde2_minimax_alphabeta.py   # Script principal
+├── maina.py   # Script principal
 ├── resultados/                 # Pasta padrão de saída
 │   ├── resultados_torneio.csv
 │   ├── agregados.csv
@@ -39,8 +39,8 @@ O projeto gera automaticamente:
 Clone o repositório e instale as dependências:
 
 ```bash
-git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-cd SEU_REPOSITORIO
+git clone https://github.com/ricaprof/MinimaxVSalphabetaO.git
+cd MinimaxVSalphabeta
 
 # (opcional) criar ambiente virtual
 python -m venv .venv
@@ -61,7 +61,7 @@ Execute o script principal para rodar o torneio entre os agentes e gerar os rela
 
 ### Exemplo (configuração padrão)
 ```bash
-python tde2_minimax_alphabeta.py
+python main.py
 ```
 - Roda **6 jogos**
 - Profundidade de busca **3**
