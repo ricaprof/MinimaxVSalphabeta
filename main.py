@@ -6,7 +6,10 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
+from pathlib import Path
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -341,12 +344,6 @@ def tournament(n_games: int = 6, depth: int = 3, seed: int = 42) -> pd.DataFrame
 
 
 # ------------------------- Relatórios & Gráficos ---------------------------
-import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 
 def save_outputs(df: pd.DataFrame, outdir: Path, depth: int, n_games: int):
     outdir.mkdir(parents=True, exist_ok=True)
@@ -457,9 +454,34 @@ Isso confirma a eficiência da poda em domínios combinatórios. Entretanto:
     story.append(Spacer(1, 12))
 
     story.append(Paragraph("Algoritmos", styles["Heading2"]))
-    story.append(Paragraph("• Minimax: busca exaustiva com utilidade em terminais.", styles["Normal"]))
-    story.append(Paragraph("• Poda Alfa-Beta: elimina ramos inúteis mantendo resultado ótimo.", styles["Normal"]))
+
+    story.append(Paragraph(
+        "O algoritmo Minimax é uma técnica clássica de tomada de decisão em jogos de dois jogadores, "
+        "particularmente em jogos de soma zero. Seu funcionamento baseia-se em simular todas as jogadas "
+        "possíveis a partir do estado atual até alcançar estados terminais, avaliando-os por uma função de "
+        "utilidade. O jogador MAX busca maximizar sua pontuação, enquanto o jogador MIN tenta minimizar, "
+        "resultando em uma árvore de busca onde cada nível alterna entre os interesses dos dois jogadores. "
+        "Apesar de garantir a escolha da jogada ótima, o Minimax puro é altamente custoso em termos de tempo "
+        "de execução, pois necessita explorar todos os nós da árvore de decisão, tornando-se inviável para "
+        "problemas de maior complexidade ou profundidade.", styles["Normal"])
+    )
+
     story.append(Spacer(1, 12))
+
+    story.append(Paragraph(
+        "A Poda Alfa-Beta surge como uma otimização essencial ao algoritmo Minimax, reduzindo "
+        "significativamente o número de nós explorados sem comprometer a qualidade da decisão final. "
+        "Ela funciona descartando ramos da árvore que não podem alterar o resultado da escolha ótima, "
+        "com base em limites denominados alfa (o valor mínimo garantido para MAX) e beta (o valor máximo "
+        "garantido para MIN). Quando um ramo atinge valores que não podem superar esses limites, ele é "
+        "interrompido imediatamente, economizando tempo e recursos computacionais. Na prática, essa técnica "
+        "torna possível aplicar o raciocínio do Minimax em profundidades maiores, aumentando a eficiência da "
+        "busca e permitindo que estratégias mais avançadas, como heurísticas de ordenação de jogadas, sejam "
+        "implementadas para potencializar ainda mais os ganhos de desempenho.", styles["Normal"])
+    )
+
+    story.append(Spacer(1, 12))
+
 
     story.append(Paragraph("Resultados", styles["Heading2"]))
     # Tabela com agregados
