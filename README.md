@@ -1,5 +1,10 @@
 # TDE2 – Minimax vs Alfa-Beta em Jogo da Velha 5x5
 
+##Alunos: 
+  - Ricardo Vinicius Moreira Vianna
+  - Ricardo Ryu Makino Magalhães
+  - Crystofer Samuel Demetino Dos Santos
+
 Este repositório contém a implementação e análise comparativa entre os algoritmos **Minimax** e **Minimax com Poda Alfa-Beta**, aplicados a um tabuleiro 5x5 (objetivo: alinhar 4 peças).
 
 O projeto gera automaticamente:
