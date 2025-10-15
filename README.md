@@ -1,6 +1,6 @@
 # TDE2 – Minimax vs Alfa-Beta em Jogo da Velha 5x5
 ---
-##Alunos: 
+## Alunos: 
   ---
   
   - Ricardo Vinicius Moreira Vianna
